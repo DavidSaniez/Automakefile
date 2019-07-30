@@ -1,0 +1,180 @@
+#!/bin/bash
+##
+## EPITECH PROJECT, 2018
+## automakefile
+## File description:
+## By DavidS
+##
+
+if [[ -z "$1" ]]; then
+	exit 84
+fi
+if [[ ! -e "$1" ]]; then
+	exit 84
+fi
+if [ $# -ge 2 ]; then
+	exit 84
+fi
+if [ ! -s "$1" ]; then
+	exit 84
+fi
+if [ $1 == "." ]; then
+	exit 84
+fi
+grep_err=`grep -F PROJECT_DIR $1`
+if [[ ! -z grep_err ]]; then
+	err=`grep -F PROJECT_DIR $1 | cut -d ';' -f2`
+	if [[ $err = "." ]]; then
+		exit 84
+	fi
+	if [[ $err = "" ]]; then
+		exit 84
+	fi
+fi
+c_file=`grep -F ".c" $1 | cut -d ";" -f1`
+if [[ $c_file = "" ]];then
+	exit 84
+fi
+file=`echo $1 | cut -d "/" -f1`
+echo -e 0 > $file/version
+echo -e "#!/bin/sh" > $file/num.sh
+echo -e "read n < version" >> $file/num.sh
+echo -e "if [ \"\$1\" == \"+\" ]; then" >> $file/num.sh
+echo -e "\tnext_n=\$[\$n+1]" >> $file/num.sh
+echo -e "elif [ \"\$1\" == \"-\" ]; then" >> $file/num.sh
+echo -e "\tnext_n=\$[\$n-1]" >> $file/num.sh
+echo -e "fi" >> $file/num.sh
+echo -e "echo \$next_n > version" >> $file/num.sh
+chmod +x $file/num.sh
+
+printf '##\n## EPITECH PROJECT, 2018\n## automakefile\n## File description:\n## By DavidS"\n##\n' > $file/Makefile
+IFS=$'\n'
+for line in `cat $1`
+do
+	var=`echo $line | cut -d ';' -f1`
+	content=`echo $line | cut -d ';' -f2`
+	if [[ $var = "EXEC" ]] && [[ -z $content ]]; then
+		printf "\nEXEC\t\t=\t"
+		printf "a.out\n"
+	fi
+	if [[ $var = "EXEC" ]] && [[ ! -z $content ]]; then
+		printf "\nEXEC\t\t=\t"
+		echo "$content"
+	fi
+	if [[ $var = "SOURCES_DIR" ]] && [[ -z $content ]]; then
+		printf "\nSOURCE_DIR\t=\t"
+		printf "./\n"
+	fi
+	if [[ $var = "SOURCES_DIR" ]] && [[ ! -z $content ]]; then
+		printf "\nSOURCE_DIR\t=\t"
+		echo "$content/"
+	fi
+	if [[ ! -z $content ]]; then
+		case $var in
+			"CFLAGS")
+				printf "\nCFLAGS\t\t=\t"
+				echo "-I./\$(HEADERS_DIR) $content"
+				;;
+			"LDFLAGS")
+				printf "\nLDFLAGS\t\t=\t"
+				echo "$content"
+				;;
+			"UNZIP")
+				printf "\nUNZIP\t\t=\t"
+				echo "$content"
+				;;
+			"BCK_DIR")
+				printf "\nBCK_DIR\t\t=\t"
+				echo "$content"
+				;;
+			"PROJECT_DIR")
+				printf "\nPROJECT_DIR\t=\t"
+				echo "$content"
+				;;
+			"HEADERS_DIR")
+				printf "\nHEADERS_DIR\t=\t"
+				echo "$content"
+				;;
+			"LIBS_DIR")
+				printf "\nLIBS_DIR\t=\t"
+				echo "-L $content"
+				;;
+			"CC")
+				printf "\nCC\t\t=\t"
+				echo "$content"
+				;;
+			"ZIP")
+				printf "\nZIP\t\t=\t"
+				echo "$content"
+				;;
+			"ZIPFLAGS")
+				printf "\nZIPFLAGS\t=\t"
+				echo "$content"
+				;;
+			"UNZIPFLAGS")
+				printf "\nUNZIPFLAGS\t=\t"
+				echo "$content"
+				;;
+		esac
+	fi
+	if [[ $line =~ ".c" ]]
+	then
+		if [[ $var =~ ".c" ]]
+		then
+			src[c]=`echo $var | cut -d " " -f1`
+			let c++
+		fi
+	fi
+	if [[ $content =~ ".c" ]]
+	then
+		src[c]=`echo $content | cut -d " " -f2`
+		let c++
+	fi
+
+	if [[ $line =~ ".h" ]]
+	then
+		if [[ $var =~ ".h" ]]
+		then
+			head[h]=`echo $var | cut -d " " -f1`
+			let h++
+		fi
+		if [[ $content =~ ".h" ]]
+		then
+			head[h]=`echo $content | cut -d " " -f1`
+			let h++
+		fi
+	fi
+
+done < $file/config >> $file/Makefile
+IFS=$OIFS
+
+c=0
+printf "\nSRCS\t\t=" >> $file/Makefile
+for c in "${src[@]}"
+	do
+		printf "\t\$(SOURCES_DIR)$c"
+		printf " \\"
+		printf "\n\t\t"
+done >> $file/Makefile
+
+h=0
+printf "\nINCLUDE\t\t=" >> $file/Makefile
+for h in "${head[@]}"
+	do
+		printf "\t\$(HEADERS_DIR)/$h"
+		printf " \\"
+		printf "\n\t\t"
+done >> $file/Makefile
+
+printf "\n\nOBJS\t\t=\t\$(SRCS:.c=.o)\n" >> $file/Makefile
+printf "\nall:\t\t\$(EXEC)\n\n" >> $file/Makefile
+printf "\$(EXEC):\t\$(OBJS)\n" >> $file/Makefile
+printf "\t\t\$(CC) \$(LDFLAGS) \$(OBJS) -o \$(EXEC) \$(LIBS_DIR)\n" >> $file/Makefile
+printf "\nclean:\n\t\trm -rf \$(EXEC)\n\n" >> $file/Makefile
+printf "fclean:\t\tclean\n\t\trm -rf \$(OBJS)\n\n" >> $file/Makefile
+printf "re:\t\tfclean all\n\n" >> $file/Makefile
+printf "archive:\n\t\t\$(ZIP) \$(ZIPFLAGS) \$(BCK_DIR)/backup.\$(ZIP) \$(SRCS)\n\t\t@$ ./num.sh \"+\"\n\t\t@$ echo -e archive file generated.\n\n" >> $file/Makefile
+printf "revert:\n\t\t\$(UNZIP) \$(UNZIPFLAGS) \$(BCK_DIR)/backup.\$(ZIP)\n\t\t@$ ./num.sh \"-\"\n\n" >> $file/Makefile
+printf "num:\n\t\t@$ cat version\n\n" >> $file/Makefile
+printf "delete:\n\t\trm -rf \$(BCK_DIR)/backup.\$(ZIP)\n" >> $file/Makefile
+exit 0
